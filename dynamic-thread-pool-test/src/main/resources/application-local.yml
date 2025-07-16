@@ -1,0 +1,17 @@
+server:
+  port: 8080
+
+thread:
+  pool:
+    executor:
+      config:
+        core-pool-size: 20
+        maximum-pool-size: 50
+        keep-alive-time: 10
+        block-queue-size: 5000
+        policy: AbortPolicy
+
+spring:
+  application:
+    name: thread-pool-test
+
