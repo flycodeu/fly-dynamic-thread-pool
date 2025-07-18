@@ -1,4 +1,4 @@
-package com.flycode.ThreadPool.service;
+package com.flycode.ThreadPool.service.service;
 
 import com.flycode.ThreadPool.entity.ThreadPoolConfigEntity;
 import org.slf4j.Logger;
