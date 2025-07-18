@@ -14,4 +14,10 @@ thread:
 spring:
   application:
     name: thread-pool-test
-
+dynamic:
+  thread:
+    pool:
+      config:
+        database: 0
+        port: 6379
+        host: localhost
