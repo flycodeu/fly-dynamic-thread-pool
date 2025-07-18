@@ -2,7 +2,10 @@ package com.flycode.ThreadPool.config;
 
 import com.alibaba.fastjson.JSON;
 import com.flycode.ThreadPool.entity.DynamicThreadPoolRedisEntity;
-import com.flycode.ThreadPool.service.DynamicThreadPoolService;
+import com.flycode.ThreadPool.job.ThreadPoolJob;
+import com.flycode.ThreadPool.listener.ThreadPoolListener;
+import com.flycode.ThreadPool.service.service.DynamicThreadPoolService;
+import com.flycode.ThreadPool.service.service.RedisRegisterService;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.codec.JsonJacksonCodec;
@@ -12,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 
 import java.util.Map;
@@ -22,9 +26,17 @@ import java.util.concurrent.ThreadPoolExecutor;
  * @author flycode
  */
 @Configuration
+@EnableScheduling
 public class DynamicThreadPoolConfig {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
+    /**
+     * 动态线程池配置类
+     *
+     * @param applicationContext
+     * @param threadPoolExecutorMap
+     * @return
+     */
     @Bean("dynamicThreadPoolService")
     public DynamicThreadPoolService dynamicThreadPoolService(ApplicationContext applicationContext, Map<String, ThreadPoolExecutor> threadPoolExecutorMap) {
         String applicationName = applicationContext.getEnvironment().getProperty("spring.application.name");
@@ -36,7 +48,12 @@ public class DynamicThreadPoolConfig {
         return new DynamicThreadPoolService(applicationName, threadPoolExecutorMap);
     }
 
-
+    /**
+     * 注册redis
+     *
+     * @param dynamicThreadPoolRedisEntity
+     * @return
+     */
     @Bean("redisClient")
     public RedissonClient redissonClient(DynamicThreadPoolRedisEntity dynamicThreadPoolRedisEntity) {
         Config config = new Config();
@@ -55,5 +72,28 @@ public class DynamicThreadPoolConfig {
         RedissonClient redissonClient = Redisson.create(config);
         logger.info("动态线程池注册中心Redis Host: {},端口：{}启动成功", dynamicThreadPoolRedisEntity.getHost(), dynamicThreadPoolRedisEntity.getPort());
         return redissonClient;
+    }
+
+
+    /**
+     * 注册中心配置
+     *
+     * @param redissonClient
+     * @return
+     */
+    @Bean("redisRegister")
+    public RedisRegisterService redisRegisterService(RedissonClient redissonClient) {
+        return new RedisRegisterService(redissonClient);
+    }
+
+
+    @Bean
+    public ThreadPoolListener threadPoolListener(DynamicThreadPoolService dynamicThreadPoolService, RedisRegisterService redisRegisterService) {
+        return new ThreadPoolListener(dynamicThreadPoolService, redisRegisterService);
+    }
+
+    @Bean
+    public ThreadPoolJob threadPoolJob(DynamicThreadPoolService dynamicThreadPoolService, RedisRegisterService redisRegisterService) {
+        return new ThreadPoolJob(dynamicThreadPoolService, redisRegisterService);
     }
 }

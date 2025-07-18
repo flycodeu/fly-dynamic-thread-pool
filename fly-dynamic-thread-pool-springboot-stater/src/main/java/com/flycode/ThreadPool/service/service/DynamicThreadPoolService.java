@@ -1,6 +1,7 @@
-package com.flycode.ThreadPool.service;
+package com.flycode.ThreadPool.service.service;
 
 import com.flycode.ThreadPool.entity.ThreadPoolConfigEntity;
+import com.flycode.ThreadPool.service.IDynamicThreadPoolService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

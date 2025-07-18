@@ -21,3 +21,4 @@ dynamic:
         database: 0
         port: 6379
         host: localhost
+        enable: true
