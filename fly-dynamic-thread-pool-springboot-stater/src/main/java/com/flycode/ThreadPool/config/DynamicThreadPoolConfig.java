@@ -2,11 +2,14 @@ package com.flycode.ThreadPool.config;
 
 import com.alibaba.fastjson.JSON;
 import com.flycode.ThreadPool.entity.DynamicThreadPoolRedisEntity;
+import com.flycode.ThreadPool.entity.ThreadPoolConfigEntity;
+import com.flycode.ThreadPool.entity.vo.RegisterEnum;
 import com.flycode.ThreadPool.job.ThreadPoolJob;
 import com.flycode.ThreadPool.listener.ThreadPoolListener;
 import com.flycode.ThreadPool.service.service.DynamicThreadPoolService;
 import com.flycode.ThreadPool.service.service.RedisRegisterService;
 import org.redisson.Redisson;
+import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.config.Config;
@@ -30,6 +33,8 @@ import java.util.concurrent.ThreadPoolExecutor;
 public class DynamicThreadPoolConfig {
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
+    String applicationName;
+
     /**
      * 动态线程池配置类
      *
@@ -39,7 +44,7 @@ public class DynamicThreadPoolConfig {
      */
     @Bean("dynamicThreadPoolService")
     public DynamicThreadPoolService dynamicThreadPoolService(ApplicationContext applicationContext, Map<String, ThreadPoolExecutor> threadPoolExecutorMap) {
-        String applicationName = applicationContext.getEnvironment().getProperty("spring.application.name");
+        applicationName = applicationContext.getEnvironment().getProperty("spring.application.name");
         if (applicationName == null) {
             logger.warn("applicationName is null");
             applicationName = "default";
@@ -86,14 +91,43 @@ public class DynamicThreadPoolConfig {
         return new RedisRegisterService(redissonClient);
     }
 
-
+    /**
+     * 线程池监听
+     *
+     * @param dynamicThreadPoolService
+     * @param redisRegisterService
+     * @return
+     */
     @Bean
     public ThreadPoolListener threadPoolListener(DynamicThreadPoolService dynamicThreadPoolService, RedisRegisterService redisRegisterService) {
         return new ThreadPoolListener(dynamicThreadPoolService, redisRegisterService);
     }
 
+    /**
+     * 动态线程池任务
+     *
+     * @param dynamicThreadPoolService
+     * @param redisRegisterService
+     * @return
+     */
     @Bean
     public ThreadPoolJob threadPoolJob(DynamicThreadPoolService dynamicThreadPoolService, RedisRegisterService redisRegisterService) {
         return new ThreadPoolJob(dynamicThreadPoolService, redisRegisterService);
     }
+
+    /**
+     * Redis 发布订阅功能
+     * @param redissonClient
+     * @param threadPoolListener
+     * @return
+     */
+    @Bean
+    public RTopic threadPoolConfigListener(RedissonClient redissonClient, ThreadPoolListener threadPoolListener) {
+        String key = RegisterEnum.THREAD_POOL_REDIS_TOPIC.getKey() + "_" + applicationName;
+        RTopic topic = redissonClient.getTopic(key);
+        topic.addListener(ThreadPoolConfigEntity.class, threadPoolListener);
+        return topic;
+    }
+
+
 }
